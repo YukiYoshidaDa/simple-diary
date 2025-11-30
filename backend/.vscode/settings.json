@@ -1,0 +1,11 @@
+{
+    "cSpell.ignoreWords": [
+        "jsonify"
+    ],
+    "cSpell.words": [
+        "appuser",
+        "mydatabase",
+        "pymysql",
+        "rootpassword"
+    ]
+}

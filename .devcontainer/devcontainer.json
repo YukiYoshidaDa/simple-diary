@@ -1,0 +1,38 @@
+{
+    "name": "Flask Dev Container",
+    "dockerComposeFile": "../docker-compose.yml",
+    "service": "flask",
+    "workspaceFolder": "/app",
+    "customizations":{
+      "vscode": {    
+        "extensions": [
+            "njpwerner.autodocstring",
+            "streetsidesoftware.code-spell-checker",
+            "ms-python.mypy-type-checker",
+            "charliermarsh.ruff",
+            "ms-python.python",
+            "ms-python.vscode-pylance",
+            "cstrap.flask-snippets",
+            "esbenp.prettier-vscode", //コード整形ツール
+            "dbaeumer.vscode-eslint", //JSlintツール
+            "GitHub.copilot",
+            "GitHub.copilot-chat",
+            "ionutvmi.path-autocomplete",
+            "dsznajder.es7-react-js-snippets"
+        ],
+        "settings": {
+          "[python]":{
+            "editor.defaultFormatter": "charliermarsh.ruff",
+            "editor.formatOnSave": true,
+            "notebook.codeActionsOnSave": {
+              "source.fixAll": "explicit",
+              "source.organizeImports.ruff": "explicit"
+            }
+        }
+      }
+
+      }
+    }
+    
+
+  }

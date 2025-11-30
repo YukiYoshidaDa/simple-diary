@@ -1,0 +1,39 @@
+services:
+  flask:
+    container_name: backend_sns
+    build: ./backend
+    environment:
+      MYSQL_HOST: mysql_sns
+      MYSQL_PORT: 3306
+      MYSQL_USER: sns_app
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: sns
+
+    volumes:
+      - ./backend:/app
+    ports:
+      - '5000:5000'
+  react:
+    container_name: frontend_sns
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+    ports:
+      - '5173:5173'
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+  db:
+    container_name: mysql_sns
+    image: mysql:latest
+    environment:
+      MYSQL_USER: sns_app
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: sns
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - '3306:3306'
+
+volumes:
+  mysql-data:

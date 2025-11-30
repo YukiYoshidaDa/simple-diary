@@ -1,0 +1,10 @@
+Flask
+Flask-Cors
+ruff
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-Login
+pymysql
+cryptography
+types-Flask-Migrate
+types-Flask-Cors
