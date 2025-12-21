@@ -1,5 +1,6 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
+
 from services import post_service
 
 posts_bp = Blueprint("posts", __name__)

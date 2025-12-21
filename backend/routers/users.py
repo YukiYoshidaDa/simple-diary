@@ -1,12 +1,14 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify, request
 from flask_login import (
-    login_user as flask_login_user,
-    logout_user,
     current_user,
     login_required,
+    logout_user,
 )
-from services import post_service
-from services import user_service
+from flask_login import (
+    login_user as flask_login_user,
+)
+
+from services import post_service, user_service
 
 users_bp = Blueprint("users", __name__)
 

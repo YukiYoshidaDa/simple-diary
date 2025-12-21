@@ -1,5 +1,4 @@
-from models import db
-from models import Post
+from models import Post, db
 
 
 def create_post(user_id, content):
