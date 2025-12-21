@@ -1,38 +1,39 @@
 {
-    "name": "Flask Dev Container",
-    "dockerComposeFile": "../docker-compose.yml",
-    "service": "flask",
-    "workspaceFolder": "/app",
-    "customizations":{
-      "vscode": {    
-        "extensions": [
-            "njpwerner.autodocstring",
-            "streetsidesoftware.code-spell-checker",
-            "ms-python.mypy-type-checker",
-            "charliermarsh.ruff",
-            "ms-python.python",
-            "ms-python.vscode-pylance",
-            "cstrap.flask-snippets",
-            "esbenp.prettier-vscode", //コード整形ツール
-            "dbaeumer.vscode-eslint", //JSlintツール
-            "GitHub.copilot",
-            "GitHub.copilot-chat",
-            "ionutvmi.path-autocomplete",
-            "dsznajder.es7-react-js-snippets"
-        ],
-        "settings": {
-          "[python]":{
-            "editor.defaultFormatter": "charliermarsh.ruff",
-            "editor.formatOnSave": true,
-            "notebook.codeActionsOnSave": {
-              "source.fixAll": "explicit",
-              "source.organizeImports.ruff": "explicit"
-            }
+  "name": "Flask Dev Container",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "flask",
+  "workspaceFolder": "/app",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Python開発の精鋭セット
+        "ms-python.python",              // Python基本機能
+        "ms-python.vscode-pylance",      // 型補完・定義ジャンプ（必須）
+        "charliermarsh.ruff",           // 整形・インポート整理（必須）
+        "ms-python.mypy-type-checker",   // 静的型チェック（厳格な開発用）
+        
+        // 便利ツール
+        "streetsidesoftware.code-spell-checker", // スペルミス防止
+        "ionutvmi.path-autocomplete",            // ファイルパス補完
+        "tamasfe.even-better-toml",              // pyproject.tomlの編集補助
+        "GitHub.copilot",                        // AI支援
+        "GitHub.copilot-chat"
+      ],
+      "settings": {
+        // 全体設定（不要な空白と末尾の改行を管理）
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        
+        // Python固有の設定
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+          }
         }
       }
-
-      }
     }
-    
-
   }
+}
