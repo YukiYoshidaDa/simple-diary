@@ -1,5 +1,4 @@
-from models import db
-from models import User
+from models import User, db
 
 
 def register_user(username, email, password):
