@@ -1,0 +1,8 @@
+[tool.ruff]
+lint.select = ["E", "F", "I"]
+# 保存時やコマンド実行時に自動修正を許可する
+lint.fixable = ["ALL"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
