@@ -1,11 +1,13 @@
-from flask import Flask, jsonify
-from flask_cors import CORS
-from sqlalchemy import text
-from routers import users_bp, settings_bp, posts_bp
-from models import db, User
-from flask_migrate import Migrate
-from flask_login import LoginManager
 import os
+
+from flask import Blueprint, Flask, jsonify
+from flask_cors import CORS
+from flask_login import LoginManager
+from flask_migrate import Migrate
+from sqlalchemy import text
+
+from models import User, db
+from routers import posts_bp, settings_bp, users_bp
 
 # Flaskアプリケーションのインスタンス作成
 app = Flask(__name__)
@@ -51,10 +53,12 @@ def hello_world():
         return "Error: " + str(e)
 
 
-app.register_blueprint(users_bp, url_prefix="/users")
-app.register_blueprint(settings_bp, url_prefix="/settings")
-app.register_blueprint(posts_bp, url_prefix="/posts")
+api_bp = Blueprint("api", __name__)
 
+api_bp.register_blueprint(users_bp, url_prefix="/users")
+api_bp.register_blueprint(settings_bp, url_prefix="/settings")
+api_bp.register_blueprint(posts_bp, url_prefix="/posts")
+app.register_blueprint(api_bp, url_prefix="/api")
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
