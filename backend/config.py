@@ -5,17 +5,14 @@ class Config:
     ENV = os.getenv("FLASK_ENV", "development")
 
     # 2. 秘密鍵の設定
-    # 開発時はデフォルト値を、本番（FLASK_ENV=production）では「必須」にします
     if ENV == "development":
         SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
     else:
-        # 本番で SECRET_KEY がないとエラーを投げて起動させない（安全第一！）
         SECRET_KEY = os.environ.get("SECRET_KEY")
         if not SECRET_KEY:
             raise ValueError("No SECRET_KEY set for production environment")
 
     # 3. データベース接続文字列
-    # Compose 側で注入した変数名を正確に使いましょう！
     MYSQL_USER = os.getenv("MYSQL_USER")
     MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
     MYSQL_HOST = os.getenv("MYSQL_HOST", "mysql_sns")  # デフォルトはサービス名
