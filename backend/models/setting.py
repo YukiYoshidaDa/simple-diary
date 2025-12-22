@@ -9,7 +9,9 @@ class Setting(db.Model):
     __tablename__ = "settings"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     notifications_enabled = db.Column(db.Boolean, default=True)
     theme = db.Column(db.String(20), default="light")
 
