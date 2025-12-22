@@ -70,11 +70,7 @@ def patch_profile():
     if not data:
         return jsonify({"message": "No data provided"}), 400
 
-    updated_user = user_service.update_user_profile(
-        user_id=current_user.id,
-        new_username=data.get("username"),
-        new_email=data.get("email"),
-    )
+    updated_user = user_service.update_user_profile(current_user.id, data)
 
     if updated_user:
         return jsonify(

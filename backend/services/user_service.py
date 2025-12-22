@@ -1,4 +1,7 @@
+from flask import current_app
+
 from models import User, db
+from services.setting_service import create_default_settings
 
 
 def register_user(username, email, password):
@@ -8,12 +11,18 @@ def register_user(username, email, password):
         or User.query.filter_by(email=email).first()
     ):
         return None  # ユーザーが既に存在する場合は None を返す
-
-    new_user = User(username=username, email=email)
-    new_user.set_password(password)  # パスワードをハッシュ化して保存
-    db.session.add(new_user)
-    db.session.commit()
-    return new_user
+    try:
+        new_user = User(username=username, email=email)
+        new_user.set_password(password)  # パスワードをハッシュ化して保存
+        db.session.add(new_user)
+        db.session.flush()
+        create_default_settings(new_user.id)
+        db.session.commit()
+        return new_user
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Registration error: {e}")
+        return None
 
 
 def login_user(username, password):
@@ -34,16 +43,17 @@ def get_user_by_id(user_id):
     return User.query.get(user_id)
 
 
-def update_user_profile(user_id, new_username=None, new_email=None):
+def update_user_profile(user_id, data):
     """ユーザー情報を更新"""
     user = User.query.get(user_id)
     if not user:
         return None
 
-    if new_username is not None:
-        user.username = new_username
-    if new_email is not None:
-        user.email = new_email
+    allowed_fields = {"username", "email"}
+
+    for field in allowed_fields:
+        if field in data and data[field] is not None:
+            setattr(user, field, data[field])
 
     db.session.commit()
     return user

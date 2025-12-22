@@ -1,36 +1,33 @@
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
-from models import Setting, db
+from services import setting_service
 
 settings_bp = Blueprint("settings", __name__)
 
 
-@settings_bp.route("/settings", methods=["GET", "POST"])
+@settings_bp.route("", methods=["GET"])
 @login_required
-def settings():
-    # ユーザーの設定を取得
-    settings = Setting.query.filter_by(user_id=current_user.id).first()
+def get_settings():
+    settings = setting_service.get_settings_by_user(current_user.id)
+    if not settings:
+        return jsonify({"error": "Settings not found"}), 404
 
-    if request.method == "POST":
-        # フォームデータを取得して設定を更新
-        notifications_enabled = request.form.get("notifications_enabled") == "on"
-        language = request.form.get("language")
+    return jsonify(settings.to_dict()), 200
 
-        if settings:
-            settings.notifications_enabled = notifications_enabled
-            settings.language = language
-        else:
-            # 設定がまだ存在しない場合、新たに作成
-            new_settings = Setting(
-                user_id=current_user.id,
-                notifications_enabled=notifications_enabled,
-                language=language,
-            )
-            db.session.add(new_settings)
 
-        db.session.commit()
+@settings_bp.route("", methods=["PATCH"])
+@login_required
+def update_settings_route():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid request body"}), 400
 
-        return redirect(url_for("settings.settings"))
+    updated_settings = setting_service.update_settings(current_user.id, data)
 
-    return render_template("settings.html", settings=settings)
+    if not updated_settings:
+        return jsonify({"error": "Failed to update"}), 404
+
+    return jsonify(
+        {"message": "Settings updated", "settings": updated_settings.to_dict()}
+    ), 200
