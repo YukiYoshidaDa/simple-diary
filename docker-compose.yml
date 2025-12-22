@@ -3,16 +3,22 @@ services:
     container_name: backend_sns
     build: ./backend
     environment:
-      MYSQL_HOST: mysql_sns
-      MYSQL_PORT: 3306
-      MYSQL_USER: sns_app
-      MYSQL_PASSWORD: password
-      MYSQL_DATABASE: sns
-
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - MYSQL_HOST=mysql_sns
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    env_file:
+      - ./backend/.env
     volumes:
       - ./backend:/app
     ports:
       - '5000:5000'
+    depends_on:
+      - db
+
   react:
     container_name: frontend_sns
     build: ./frontend
@@ -22,14 +28,15 @@ services:
       - '5173:5173'
     environment:
       - CHOKIDAR_USEPOLLING=true
+
   db:
     container_name: mysql_sns
-    image: mysql:latest
+    image: mysql:8.0
     environment:
-      MYSQL_USER: sns_app
-      MYSQL_PASSWORD: password
-      MYSQL_DATABASE: sns
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql-data:/var/lib/mysql
     ports:

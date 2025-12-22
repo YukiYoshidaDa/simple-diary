@@ -1,36 +1,30 @@
-import os
-
 from flask import Blueprint, Flask, jsonify
 from flask_cors import CORS
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from sqlalchemy import text
 
+from config import Config
 from models import User, db
-from routers import posts_bp, settings_bp, users_bp
 
 # Flaskアプリケーションのインスタンス作成
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "your_secret_key_here"
+app.config.from_object(Config)
 
 CORS(app)  # Reactからのリクエストを許可するためにCORSを設定
-
-
-SQLALCHEMY_DATABASE_URI = (
-    f"mysql+pymysql://{os.environ['MYSQL_USER']}:{os.environ['MYSQL_PASSWORD']}"
-    f"@{os.environ['MYSQL_HOST']}:{os.environ['MYSQL_PORT']}/{os.environ['MYSQL_DATABASE']}"
-)
-
-# MySQL接続設定 (root password, データベース名の設定)
-app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-# SQLAlchemyインスタンス作成
 db.init_app(app)
 migrate = Migrate(app, db)
-
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+from routers import posts_bp, settings_bp, users_bp  # noqa: E402
+
+api_bp = Blueprint("api", __name__)
+
+api_bp.register_blueprint(users_bp, url_prefix="/users")
+api_bp.register_blueprint(settings_bp, url_prefix="/settings")
+api_bp.register_blueprint(posts_bp, url_prefix="/posts")
+app.register_blueprint(api_bp, url_prefix="/api")
 
 
 @login_manager.user_loader
@@ -52,13 +46,3 @@ def hello_world():
     except Exception as e:
         return "Error: " + str(e)
 
-
-api_bp = Blueprint("api", __name__)
-
-api_bp.register_blueprint(users_bp, url_prefix="/users")
-api_bp.register_blueprint(settings_bp, url_prefix="/settings")
-api_bp.register_blueprint(posts_bp, url_prefix="/posts")
-app.register_blueprint(api_bp, url_prefix="/api")
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
