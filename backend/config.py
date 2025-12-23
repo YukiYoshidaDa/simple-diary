@@ -1,5 +1,6 @@
 import os
 
+
 class Config:
     # 1. 動作環境の判定（Compose 側で指定した FLASK_ENV を参照）
     ENV = os.getenv("FLASK_ENV", "development")
