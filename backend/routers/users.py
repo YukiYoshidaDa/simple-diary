@@ -1,3 +1,5 @@
+import re
+
 from flask import Blueprint, jsonify, request
 from flask_login import (
     current_user,
@@ -24,9 +26,23 @@ def register():
     if not username or not email or not password:
         return jsonify({"message": "Missing required fields"}), 400
 
+    # 簡易メールバリデーション
+    email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+    if not re.match(email_regex, email):
+        return jsonify({"message": "Invalid email format"}), 400
+
+    if len(password) < 8:
+        return jsonify({"message": "Password must be at least 8 characters"}), 400
+
+    # 重複チェック
+    if user_service.user_exists_by_username(username):
+        return jsonify({"message": "Username already taken"}), 409
+    if user_service.user_exists_by_email(email):
+        return jsonify({"message": "Email already registered"}), 409
+
     user = user_service.register_user(username, email, password)
     if not user:
-        return jsonify({"message": "User already exists"}), 400
+        return jsonify({"message": "Failed to register user"}), 500
 
     return jsonify({"message": "User registered successfully", "id": user.id}), 201
 
@@ -36,6 +52,9 @@ def login():
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
+
+    if not username or not password:
+        return jsonify({"message": "Missing username or password"}), 400
 
     user = user_service.login_user(username, password)
     if user:
@@ -70,6 +89,24 @@ def patch_profile():
     if not data:
         return jsonify({"message": "No data provided"}), 400
 
+    # 入力検証と重複チェック
+    if "email" in data and data.get("email"):
+        email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+        if not re.match(email_regex, data.get("email")):
+            return jsonify({"message": "Invalid email format"}), 400
+        if (
+            user_service.user_exists_by_email(data.get("email"))
+            and data.get("email") != current_user.email
+        ):
+            return jsonify({"message": "Email already in use"}), 409
+
+    if "username" in data and data.get("username"):
+        if (
+            user_service.user_exists_by_username(data.get("username"))
+            and data.get("username") != current_user.username
+        ):
+            return jsonify({"message": "Username already in use"}), 409
+
     updated_user = user_service.update_user_profile(current_user.id, data)
 
     if updated_user:
@@ -77,7 +114,7 @@ def patch_profile():
             {"message": "Profile updated", "user": updated_user.to_dict()}
         ), 200
     else:
-        return jsonify({"message": "User not found"}), 404
+        return jsonify({"message": "Failed to update profile"}), 400
 
 
 @users_bp.route("/profile", methods=["DELETE"])

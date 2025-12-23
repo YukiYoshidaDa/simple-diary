@@ -1,12 +1,19 @@
+from flask import current_app
+
 from models import Post, db
 
 
 def create_post(user_id, content):
     """新しい投稿を作成"""
-    post = Post(user_id=user_id, content=content)
-    db.session.add(post)
-    db.session.commit()
-    return post
+    try:
+        post = Post(user_id=user_id, content=content)
+        db.session.add(post)
+        db.session.commit()
+        return post
+    except Exception as e:
+        current_app.logger.error(f"create_post error: {e}")
+        db.session.rollback()
+        return None
 
 
 def get_post_by_id(post_id):
@@ -14,12 +21,17 @@ def get_post_by_id(post_id):
 
 
 def delete_post(post_id):
-    post = Post.query.get(post_id)
-    if post:
-        db.session.delete(post)
-        db.session.commit()
-        return True
-    return False
+    try:
+        post = Post.query.get(post_id)
+        if post:
+            db.session.delete(post)
+            db.session.commit()
+            return True
+        return False
+    except Exception as e:
+        current_app.logger.error(f"delete_post error: {e}")
+        db.session.rollback()
+        return False
 
 
 def get_all_posts():
@@ -31,9 +43,14 @@ def get_posts_by_user(user_id):
 
 
 def update_post(post_id, new_content):
-    post = Post.query.get(post_id)
-    if post:
-        post.content = new_content
-        db.session.commit()
-        return post
-    return None
+    try:
+        post = Post.query.get(post_id)
+        if post:
+            post.content = new_content
+            db.session.commit()
+            return post
+        return None
+    except Exception as e:
+        current_app.logger.error(f"update_post error: {e}")
+        db.session.rollback()
+        return None

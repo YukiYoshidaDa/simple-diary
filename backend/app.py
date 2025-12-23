@@ -45,4 +45,3 @@ def hello_world():
         return "DB connection successful: " + str(result.fetchone())
     except Exception as e:
         return "Error: " + str(e)
-
