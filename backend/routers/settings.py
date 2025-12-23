@@ -23,10 +23,20 @@ def update_settings_route():
     if not data:
         return jsonify({"error": "Invalid request body"}), 400
 
+    # バリデーション
+    allowed_themes = {"light", "dark"}
+    if "theme" in data and data.get("theme") not in allowed_themes:
+        return jsonify({"error": "Invalid theme value"}), 400
+
+    if "notifications_enabled" in data:
+        val = data.get("notifications_enabled")
+        if not isinstance(val, (bool, str, int)):
+            return jsonify({"error": "Invalid notifications_enabled value"}), 400
+
     updated_settings = setting_service.update_settings(current_user.id, data)
 
     if not updated_settings:
-        return jsonify({"error": "Failed to update"}), 404
+        return jsonify({"error": "Failed to update"}), 400
 
     return jsonify(
         {"message": "Settings updated", "settings": updated_settings.to_dict()}
