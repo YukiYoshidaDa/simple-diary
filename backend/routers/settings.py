@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
-from schemas.setting_schema import SettingSchema, SettingUpdateSchema
+from schemas.setting_schema import SettingSchema
 from services import setting_service
 
 settings_bp = Blueprint("settings", __name__)
@@ -11,9 +11,6 @@ settings_bp = Blueprint("settings", __name__)
 @login_required
 def get_settings():
     settings = setting_service.get_settings_by_user(current_user.id)
-    if not settings:
-        return jsonify({"error": "Settings not found"}), 404
-
     return jsonify(SettingSchema().dump(settings)), 200
 
 
@@ -21,16 +18,18 @@ def get_settings():
 @login_required
 def update_settings_route():
     body = request.get_json() or {}
-    data = SettingUpdateSchema().load(body, partial=True)
+    validated = SettingSchema(partial=True).load(body)
 
-    updated_settings = setting_service.update_settings(current_user.id, data)
+    updated_settings = setting_service.update_settings(
+        current_user.id, validated, current_user.id
+    )
 
-    if not updated_settings:
-        return jsonify({"error": "Failed to update"}), 400
-
-    return jsonify(
-        {
-            "message": "Settings updated",
-            "settings": SettingSchema().dump(updated_settings),
-        }
-    ), 200
+    return (
+        jsonify(
+            {
+                "message": "Settings updated",
+                "settings": SettingSchema().dump(updated_settings),
+            }
+        ),
+        200,
+    )

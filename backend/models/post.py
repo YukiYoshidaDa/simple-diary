@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from extensions import db
 
 
-class Post(db.Model):
+class Post(db.Model):  # type: ignore[name-defined]
     """ユーザーの投稿を管理するモデル"""
 
     __tablename__ = "posts"
