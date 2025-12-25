@@ -6,3 +6,7 @@ lint.fixable = ["ALL"]
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[[tool.mypy.overrides]]
+module = "flask_login.*"
+ignore_missing_imports = true
