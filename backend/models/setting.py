@@ -1,7 +1,7 @@
 from extensions import db
 
 
-class Setting(db.Model):
+class Setting(db.Model):  # type: ignore[name-defined]
     """
     ユーザーの個人設定（通知・外観）を管理するモデル
     """
