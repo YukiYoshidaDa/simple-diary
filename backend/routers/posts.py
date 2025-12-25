@@ -1,7 +1,8 @@
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
-from schemas.post_schema import PostCreateSchema, PostSchema, PostUpdateSchema
+from schemas.base import schema_with_context
+from schemas.post_schema import PostSchema
 from services import post_service
 
 posts_bp = Blueprint("posts", __name__)
@@ -11,11 +12,11 @@ posts_bp = Blueprint("posts", __name__)
 @login_required
 def create_post():
     body = request.get_json() or {}
-    data = PostCreateSchema().load(body)
-
-    post = post_service.create_post(
-        user_id=current_user.id, content=data["content"].strip()
+    post_obj = schema_with_context(PostSchema, current_user_id=current_user.id).load(
+        body
     )
+
+    post = post_service.create_post(post_obj)
     if not post:
         return jsonify({"error": "Failed to create post"}), 500
     return jsonify(PostSchema().dump(post)), 201
@@ -39,7 +40,6 @@ def get_post(post_id):
 @login_required
 def update_post(post_id):
     body = request.get_json() or {}
-    data = PostUpdateSchema().load(body)
 
     post = post_service.get_post_by_id(post_id)
     if not post:
@@ -48,7 +48,9 @@ def update_post(post_id):
     if post.user_id != current_user.id:
         return jsonify({"error": "Forbidden"}), 403
 
-    updated = post_service.update_post(post_id, data["content"].strip())
+    data_obj = schema_with_context(PostSchema, post=post).load(body, partial=True)
+
+    updated = post_service.update_post(data_obj)
     if not updated:
         return jsonify({"error": "Failed to update post"}), 500
 

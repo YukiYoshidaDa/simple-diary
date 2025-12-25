@@ -4,13 +4,12 @@ from extensions import db
 from models import Post
 
 
-def create_post(user_id, content):
-    """新しい投稿を作成"""
+def create_post(post_obj):
+    """Schema が作った Post インスタンスを受け取り保存する"""
     try:
-        post = Post(user_id=user_id, content=content)
-        db.session.add(post)
+        db.session.add(post_obj)
         db.session.commit()
-        return post
+        return post_obj
     except Exception as e:
         current_app.logger.error(f"create_post error: {e}")
         db.session.rollback()
@@ -43,11 +42,11 @@ def get_posts_by_user(user_id):
     return Post.query.filter_by(user_id=user_id).all()
 
 
-def update_post(post_id, new_content):
+def update_post(post_obj):
     try:
-        post = Post.query.get(post_id)
+        post = Post.query.get(post_obj.id)
         if post:
-            post.content = new_content
+            post.content = post_obj.content
             db.session.commit()
             return post
         return None

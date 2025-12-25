@@ -5,21 +5,14 @@ from models import User
 from services.setting_service import create_default_settings
 
 
-def register_user(username, email, password):
-    """ユーザーを登録"""
-    if (
-        User.query.filter_by(username=username).first()
-        or User.query.filter_by(email=email).first()
-    ):
-        return None  # ユーザーが既に存在する場合は None を返す
+def register_user(user_obj):
+    """ユーザーを登録（Schemaで作成された User インスタンスを受け取る）"""
     try:
-        new_user = User(username=username, email=email)
-        new_user.set_password(password)  # パスワードをハッシュ化して保存
-        db.session.add(new_user)
+        db.session.add(user_obj)
         db.session.flush()
-        create_default_settings(new_user.id)
+        create_default_settings(user_obj.id)
         db.session.commit()
-        return new_user
+        return user_obj
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Registration error: {e}")
@@ -34,10 +27,12 @@ def user_exists_by_email(email):
     return User.query.filter_by(email=email).first() is not None
 
 
-def login_user(username, password):
-    """ログイン処理"""
+def login_user(user_obj):
+    """ログイン処理（LoginSchema が作った軽量オブジェクトを受け取る）"""
+    username = getattr(user_obj, "username", None)
+    password = getattr(user_obj, "password", None)
     user = User.query.filter_by(username=username).first()
-    if user and user.check_password(password):
+    if user and password and user.check_password(password):
         return user
     return None
 
@@ -52,36 +47,29 @@ def get_user_by_id(user_id):
     return User.query.get(user_id)
 
 
-def update_user_profile(user_id, data):
-    """ユーザー情報を更新"""
-    user = User.query.get(user_id)
-    if not user:
-        return None
-
-    allowed_fields = {"username", "email"}
-
-    # ユニークチェック
-    if "username" in data and data.get("username"):
-        existing = User.query.filter(
-            User.username == data["username"], User.id != user_id
-        ).first()
-        if existing:
-            return None
-
-    if "email" in data and data.get("email"):
-        existing = User.query.filter(
-            User.email == data["email"], User.id != user_id
-        ).first()
-        if existing:
-            return None
-
+def update_user_profile(user_obj):
+    """更新済みの User インスタンスを受け取り、DB に永続化する"""
     try:
-        for field in allowed_fields:
-            if field in data and data[field] is not None:
-                setattr(user, field, data[field])
+        # if detached instance with id, merge changes
+        if not getattr(user_obj, "id", None):
+            return None
+
+        existing = User.query.get(user_obj.id)
+        if not existing:
+            return None
+
+        # copy fields
+        for attr in ("username", "email"):
+            val = getattr(user_obj, attr, None)
+            if val is not None:
+                setattr(existing, attr, val)
+
+        # password handled by schema (set_password on existing if provided)
+        if getattr(user_obj, "password_hash", None) and not existing.password_hash:
+            existing.password_hash = user_obj.password_hash
 
         db.session.commit()
-        return user
+        return existing
     except Exception as e:
         current_app.logger.error(f"update_user_profile error: {e}")
         db.session.rollback()

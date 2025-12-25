@@ -1,7 +1,8 @@
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
-from schemas.setting_schema import SettingSchema, SettingUpdateSchema
+from schemas.base import schema_with_context
+from schemas.setting_schema import SettingSchema
 from services import setting_service
 
 settings_bp = Blueprint("settings", __name__)
@@ -21,9 +22,13 @@ def get_settings():
 @login_required
 def update_settings_route():
     body = request.get_json() or {}
-    data = SettingUpdateSchema().load(body, partial=True)
+    settings_obj = schema_with_context(
+        SettingSchema,
+        current_user_id=current_user.id,
+        settings=setting_service.get_settings_by_user(current_user.id),
+    ).load(body, partial=True)
 
-    updated_settings = setting_service.update_settings(current_user.id, data)
+    updated_settings = setting_service.update_settings(settings_obj)
 
     if not updated_settings:
         return jsonify({"error": "Failed to update"}), 400

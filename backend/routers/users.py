@@ -8,8 +8,9 @@ from flask_login import (
     login_user as flask_login_user,
 )
 
+from schemas.base import schema_with_context
 from schemas.post_schema import PostSchema
-from schemas.user_schema import LoginSchema, UpdateUserSchema, UserSchema
+from schemas.user_schema import LoginSchema, UserSchema
 from services import post_service, user_service
 
 users_bp = Blueprint("users", __name__)
@@ -19,19 +20,9 @@ users_bp = Blueprint("users", __name__)
 @users_bp.route("/register", methods=["POST"])
 def register():
     body = request.get_json() or {}
-    data = UserSchema().load(body)
+    user_obj = UserSchema().load(body)
 
-    username = data["username"]
-    email = data["email"]
-    password = data["password"]
-
-    # 重複チェック
-    if user_service.user_exists_by_username(username):
-        return jsonify({"message": "Username already taken"}), 409
-    if user_service.user_exists_by_email(email):
-        return jsonify({"message": "Email already registered"}), 409
-
-    user = user_service.register_user(username, email, password)
+    user = user_service.register_user(user_obj)
     if not user:
         return jsonify({"message": "Failed to register user"}), 500
 
@@ -41,9 +32,9 @@ def register():
 @users_bp.route("/login", methods=["POST"])
 def login():
     body = request.get_json() or {}
-    data = LoginSchema().load(body)
+    login_obj = LoginSchema().load(body)
 
-    user = user_service.login_user(data["username"], data["password"])
+    user = user_service.login_user(login_obj)
     if user:
         flask_login_user(user)
         return jsonify({"message": "Login successful", "id": user.id}), 200
@@ -73,31 +64,23 @@ def get_profile():
 def patch_profile():
     """ユーザー情報の部分更新"""
     body = request.get_json() or {}
-    data = UpdateUserSchema().load(body, partial=True)
 
-    # 重複チェック
-    if (
-        "email" in data
-        and data.get("email")
-        and data.get("email") != current_user.email
-    ):
-        if user_service.user_exists_by_email(data.get("email")):
-            return jsonify({"message": "Email already in use"}), 409
+    # Load into an updated User instance using schema (validation + normalization)
+    user_obj = schema_with_context(
+        UserSchema,
+        current_user=current_user,
+        current_user_id=current_user.id,
+    ).load(body, partial=True)
 
-    if (
-        "username" in data
-        and data.get("username")
-        and data.get("username") != current_user.username
-    ):
-        if user_service.user_exists_by_username(data.get("username")):
-            return jsonify({"message": "Username already in use"}), 409
-
-    updated_user = user_service.update_user_profile(current_user.id, data)
+    updated_user = user_service.update_user_profile(user_obj)
 
     if updated_user:
-        return jsonify(
-            {"message": "Profile updated", "user": UserSchema().dump(updated_user)}
-        ), 200
+        return (
+            jsonify(
+                {"message": "Profile updated", "user": UserSchema().dump(updated_user)}
+            ),
+            200,
+        )
     else:
         return jsonify({"message": "Failed to update profile"}), 400
 
@@ -105,8 +88,12 @@ def patch_profile():
 @users_bp.route("/profile", methods=["DELETE"])
 @login_required
 def delete_profile():
-    user_service.delete_user(current_user.id)
-    return jsonify({"message": "Profile deleted successfully"}), 200
+    success = user_service.delete_user(current_user.id)
+    if success:
+        logout_user()
+        return jsonify({"message": "Profile deleted successfully"}), 200
+
+    return jsonify({"message": "Failed to delete profile"}), 400
 
 
 @users_bp.route("/logout", methods=["POST"])
