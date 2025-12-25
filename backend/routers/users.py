@@ -7,7 +7,6 @@ from flask_login import (
 from flask_login import (
     login_user as flask_login_user,
 )
-from marshmallow import ValidationError
 
 from schemas.post_schema import PostSchema
 from schemas.user_schema import LoginSchema, UpdateUserSchema, UserSchema
@@ -19,11 +18,8 @@ users_bp = Blueprint("users", __name__)
 # ユーザー登録
 @users_bp.route("/register", methods=["POST"])
 def register():
-    try:
-        body = request.get_json() or {}
-        data = UserSchema().load(body)
-    except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
+    body = request.get_json() or {}
+    data = UserSchema().load(body)
 
     username = data["username"]
     email = data["email"]
@@ -44,11 +40,8 @@ def register():
 
 @users_bp.route("/login", methods=["POST"])
 def login():
-    try:
-        body = request.get_json() or {}
-        data = LoginSchema().load(body)
-    except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
+    body = request.get_json() or {}
+    data = LoginSchema().load(body)
 
     user = user_service.login_user(data["username"], data["password"])
     if user:
@@ -79,11 +72,8 @@ def get_profile():
 @login_required
 def patch_profile():
     """ユーザー情報の部分更新"""
-    try:
-        body = request.get_json() or {}
-        data = UpdateUserSchema().load(body, partial=True)
-    except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
+    body = request.get_json() or {}
+    data = UpdateUserSchema().load(body, partial=True)
 
     # 重複チェック
     if (

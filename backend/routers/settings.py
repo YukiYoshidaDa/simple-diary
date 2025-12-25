@@ -1,6 +1,5 @@
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
-from marshmallow import ValidationError
 
 from schemas.setting_schema import SettingSchema, SettingUpdateSchema
 from services import setting_service
@@ -21,11 +20,8 @@ def get_settings():
 @settings_bp.route("", methods=["PATCH"])
 @login_required
 def update_settings_route():
-    try:
-        body = request.get_json() or {}
-        data = SettingUpdateSchema().load(body, partial=True)
-    except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
+    body = request.get_json() or {}
+    data = SettingUpdateSchema().load(body, partial=True)
 
     updated_settings = setting_service.update_settings(current_user.id, data)
 

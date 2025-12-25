@@ -18,7 +18,7 @@ def create_app(config_object: object = Config):
     login_manager.init_app(app)
 
     # ルーターの登録は遅延インポートで循環参照を回避
-    from routers import posts_bp, settings_bp, users_bp  # noqa: E402
+    from routers import posts_bp, settings_bp, users_bp
 
     api_bp = Blueprint("api", __name__)
     api_bp.register_blueprint(users_bp, url_prefix="/users")
@@ -44,6 +44,12 @@ def create_app(config_object: object = Config):
             return "DB connection successful: " + str(result.fetchone())
         except Exception as e:
             return "Error: " + str(e)
+
+    from marshmallow import ValidationError
+
+    @app.errorhandler(ValidationError)
+    def handle_validation_error(err):
+        return jsonify({"errors": err.messages}), 400
 
     return app
 
