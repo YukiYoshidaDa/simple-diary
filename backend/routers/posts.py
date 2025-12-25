@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 from marshmallow import ValidationError
 
-from schemas.post_schema import PostCreateSchema, PostUpdateSchema
+from schemas.post_schema import PostCreateSchema, PostSchema, PostUpdateSchema
 from services import post_service
 
 posts_bp = Blueprint("posts", __name__)
@@ -22,13 +22,13 @@ def create_post():
     )
     if not post:
         return jsonify({"error": "Failed to create post"}), 500
-    return jsonify(post.to_dict()), 201
+    return jsonify(PostSchema().dump(post)), 201
 
 
 @posts_bp.route("/", methods=["GET"])
 def get_all_posts():
     posts = post_service.get_all_posts()
-    return jsonify([post.to_dict() for post in posts]), 200
+    return jsonify(PostSchema(many=True).dump(posts)), 200
 
 
 @posts_bp.route("/<int:post_id>", methods=["GET"])
@@ -36,7 +36,7 @@ def get_post(post_id):
     post = post_service.get_post_by_id(post_id)
     if not post:
         return jsonify({"error": "Post not found"}), 404
-    return jsonify(post.to_dict()), 200
+    return jsonify(PostSchema().dump(post)), 200
 
 
 @posts_bp.route("/<int:post_id>", methods=["PATCH"])
@@ -59,7 +59,7 @@ def update_post(post_id):
     if not updated:
         return jsonify({"error": "Failed to update post"}), 500
 
-    return jsonify(updated.to_dict()), 200
+    return jsonify(PostSchema().dump(updated)), 200
 
 
 @posts_bp.route("/<int:post_id>", methods=["DELETE"])

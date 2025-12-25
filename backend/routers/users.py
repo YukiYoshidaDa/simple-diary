@@ -9,7 +9,8 @@ from flask_login import (
 )
 from marshmallow import ValidationError
 
-from schemas.user_schema import RegisterSchema, UpdateUserSchema
+from schemas.post_schema import PostSchema
+from schemas.user_schema import LoginSchema, UpdateUserSchema, UserSchema
 from services import post_service, user_service
 
 users_bp = Blueprint("users", __name__)
@@ -20,7 +21,7 @@ users_bp = Blueprint("users", __name__)
 def register():
     try:
         body = request.get_json() or {}
-        data = RegisterSchema().load(body)
+        data = UserSchema().load(body)
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 400
 
@@ -43,14 +44,13 @@ def register():
 
 @users_bp.route("/login", methods=["POST"])
 def login():
-    data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
+    try:
+        body = request.get_json() or {}
+        data = LoginSchema().load(body)
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 400
 
-    if not username or not password:
-        return jsonify({"message": "Missing username or password"}), 400
-
-    user = user_service.login_user(username, password)
+    user = user_service.login_user(data["username"], data["password"])
     if user:
         flask_login_user(user)
         return jsonify({"message": "Login successful", "id": user.id}), 200
@@ -60,7 +60,7 @@ def login():
 @users_bp.route("/all", methods=["GET"])
 def all_users():
     users = user_service.get_all_users()
-    return jsonify([user.to_dict() for user in users]), 200
+    return jsonify(UserSchema(many=True).dump(users)), 200
 
 
 @users_bp.route("/profile", methods=["GET"])
@@ -106,7 +106,7 @@ def patch_profile():
 
     if updated_user:
         return jsonify(
-            {"message": "Profile updated", "user": updated_user.to_dict()}
+            {"message": "Profile updated", "user": UserSchema().dump(updated_user)}
         ), 200
     else:
         return jsonify({"message": "Failed to update profile"}), 400
@@ -129,4 +129,4 @@ def logout():
 @users_bp.route("/<int:user_id>/posts", methods=["GET"])
 def get_user_posts_route(user_id):
     posts = post_service.get_posts_by_user(user_id)
-    return jsonify([post.to_dict() for post in posts]), 200
+    return jsonify(PostSchema(many=True).dump(posts)), 200
