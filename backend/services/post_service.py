@@ -1,6 +1,7 @@
 from flask import current_app
 
-from models import Post, db
+from extensions import db
+from models import Post
 
 
 def create_post(user_id, content):

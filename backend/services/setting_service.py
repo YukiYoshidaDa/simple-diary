@@ -1,6 +1,7 @@
 from flask import current_app
 
-from models import Setting, db
+from extensions import db
+from models import Setting
 
 
 def create_default_settings(user_id):
