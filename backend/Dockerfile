@@ -1,14 +1,34 @@
-FROM python:latest
+FROM python:3.14-slim
+
+# 環境変数
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
+
+# 作業ユーザ作成
 ARG UID=1000
 ARG GID=1000
-RUN echo $UID $GID
-RUN groupadd -g $GID appuser && useradd -u $UID -g $GID -m appuser
-USER appuser
+RUN groupadd -g ${GID} appuser && useradd -u ${UID} -g ${GID} -m appuser
+
 WORKDIR /app
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+
+# 依存関係を先にコピーしてキャッシュを効かせる
+COPY requirements.txt /app/requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && pip install --upgrade pip \
+    && pip install -r /app/requirements.txt \
+    && apt-get remove -y build-essential \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# ソースを追加
 COPY . /app/
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
 EXPOSE 5000
-ENV FLASK_ENV=development
-ENV FLASK_DEBUG=1
-CMD ["python", "-m", "flask", "run", "--host=0.0.0.0"]
+
+CMD ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000"]

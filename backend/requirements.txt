@@ -8,3 +8,5 @@ pymysql
 cryptography
 types-Flask-Migrate
 types-Flask-Cors
+marshmallow
+marshmallow-sqlalchemy

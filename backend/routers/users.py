@@ -1,12 +1,16 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify, request
 from flask_login import (
-    login_user as flask_login_user,
-    logout_user,
     current_user,
     login_required,
+    logout_user,
 )
-from services import post_service
-from services import user_service
+from flask_login import (
+    login_user as flask_login_user,
+)
+
+from schemas.post_schema import PostSchema
+from schemas.user_schema import LoginSchema, UpdateUserSchema, UserSchema
+from services import post_service, user_service
 
 users_bp = Blueprint("users", __name__)
 
@@ -14,28 +18,32 @@ users_bp = Blueprint("users", __name__)
 # ユーザー登録
 @users_bp.route("/register", methods=["POST"])
 def register():
-    data = request.get_json()
-    username = data.get("username")
-    email = data.get("email")
-    password = data.get("password")
+    body = request.get_json() or {}
+    data = UserSchema().load(body)
 
-    if not username or not email or not password:
-        return jsonify({"message": "Missing required fields"}), 400
+    username = data["username"]
+    email = data["email"]
+    password = data["password"]
+
+    # 重複チェック
+    if user_service.user_exists_by_username(username):
+        return jsonify({"message": "Username already taken"}), 409
+    if user_service.user_exists_by_email(email):
+        return jsonify({"message": "Email already registered"}), 409
 
     user = user_service.register_user(username, email, password)
     if not user:
-        return jsonify({"message": "User already exists"}), 400
+        return jsonify({"message": "Failed to register user"}), 500
 
     return jsonify({"message": "User registered successfully", "id": user.id}), 201
 
 
 @users_bp.route("/login", methods=["POST"])
 def login():
-    data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
+    body = request.get_json() or {}
+    data = LoginSchema().load(body)
 
-    user = user_service.login_user(username, password)
+    user = user_service.login_user(data["username"], data["password"])
     if user:
         flask_login_user(user)
         return jsonify({"message": "Login successful", "id": user.id}), 200
@@ -45,7 +53,7 @@ def login():
 @users_bp.route("/all", methods=["GET"])
 def all_users():
     users = user_service.get_all_users()
-    return jsonify([user.to_dict() for user in users]), 200
+    return jsonify(UserSchema(many=True).dump(users)), 200
 
 
 @users_bp.route("/profile", methods=["GET"])
@@ -64,22 +72,34 @@ def get_profile():
 @login_required
 def patch_profile():
     """ユーザー情報の部分更新"""
-    data = request.get_json()
-    if not data:
-        return jsonify({"message": "No data provided"}), 400
+    body = request.get_json() or {}
+    data = UpdateUserSchema().load(body, partial=True)
 
-    updated_user = user_service.update_user_profile(
-        user_id=current_user.id,
-        new_username=data.get("username"),
-        new_email=data.get("email"),
-    )
+    # 重複チェック
+    if (
+        "email" in data
+        and data.get("email")
+        and data.get("email") != current_user.email
+    ):
+        if user_service.user_exists_by_email(data.get("email")):
+            return jsonify({"message": "Email already in use"}), 409
+
+    if (
+        "username" in data
+        and data.get("username")
+        and data.get("username") != current_user.username
+    ):
+        if user_service.user_exists_by_username(data.get("username")):
+            return jsonify({"message": "Username already in use"}), 409
+
+    updated_user = user_service.update_user_profile(current_user.id, data)
 
     if updated_user:
         return jsonify(
-            {"message": "Profile updated", "user": updated_user.to_dict()}
+            {"message": "Profile updated", "user": UserSchema().dump(updated_user)}
         ), 200
     else:
-        return jsonify({"message": "User not found"}), 404
+        return jsonify({"message": "Failed to update profile"}), 400
 
 
 @users_bp.route("/profile", methods=["DELETE"])
@@ -99,4 +119,4 @@ def logout():
 @users_bp.route("/<int:user_id>/posts", methods=["GET"])
 def get_user_posts_route(user_id):
     posts = post_service.get_posts_by_user(user_id)
-    return jsonify([post.to_dict() for post in posts]), 200
+    return jsonify(PostSchema(many=True).dump(posts)), 200
