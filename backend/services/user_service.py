@@ -1,6 +1,7 @@
 from flask import current_app
 
-from models import User, db
+from extensions import db
+from models import User
 from services.setting_service import create_default_settings
 
 

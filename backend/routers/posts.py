@@ -1,6 +1,5 @@
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
-from marshmallow import ValidationError
 
 from schemas.post_schema import PostCreateSchema, PostSchema, PostUpdateSchema
 from services import post_service
@@ -11,11 +10,8 @@ posts_bp = Blueprint("posts", __name__)
 @posts_bp.route("/", methods=["POST"])
 @login_required
 def create_post():
-    try:
-        body = request.get_json() or {}
-        data = PostCreateSchema().load(body)
-    except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
+    body = request.get_json() or {}
+    data = PostCreateSchema().load(body)
 
     post = post_service.create_post(
         user_id=current_user.id, content=data["content"].strip()
@@ -42,11 +38,8 @@ def get_post(post_id):
 @posts_bp.route("/<int:post_id>", methods=["PATCH"])
 @login_required
 def update_post(post_id):
-    try:
-        body = request.get_json() or {}
-        data = PostUpdateSchema().load(body)
-    except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
+    body = request.get_json() or {}
+    data = PostUpdateSchema().load(body)
 
     post = post_service.get_post_by_id(post_id)
     if not post:
