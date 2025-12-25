@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
+from marshmallow import ValidationError
 
+from schemas.setting_schema import SettingUpdateSchema
 from services import setting_service
 
 settings_bp = Blueprint("settings", __name__)
@@ -19,19 +21,11 @@ def get_settings():
 @settings_bp.route("", methods=["PATCH"])
 @login_required
 def update_settings_route():
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "Invalid request body"}), 400
-
-    # バリデーション
-    allowed_themes = {"light", "dark"}
-    if "theme" in data and data.get("theme") not in allowed_themes:
-        return jsonify({"error": "Invalid theme value"}), 400
-
-    if "notifications_enabled" in data:
-        val = data.get("notifications_enabled")
-        if not isinstance(val, (bool, str, int)):
-            return jsonify({"error": "Invalid notifications_enabled value"}), 400
+    try:
+        body = request.get_json() or {}
+        data = SettingUpdateSchema().load(body, partial=True)
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 400
 
     updated_settings = setting_service.update_settings(current_user.id, data)
 

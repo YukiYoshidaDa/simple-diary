@@ -1,5 +1,3 @@
-import re
-
 from flask import Blueprint, jsonify, request
 from flask_login import (
     current_user,
@@ -9,7 +7,9 @@ from flask_login import (
 from flask_login import (
     login_user as flask_login_user,
 )
+from marshmallow import ValidationError
 
+from schemas.user_schema import RegisterSchema, UpdateUserSchema
 from services import post_service, user_service
 
 users_bp = Blueprint("users", __name__)
@@ -18,21 +18,15 @@ users_bp = Blueprint("users", __name__)
 # ユーザー登録
 @users_bp.route("/register", methods=["POST"])
 def register():
-    data = request.get_json()
-    username = data.get("username")
-    email = data.get("email")
-    password = data.get("password")
+    try:
+        body = request.get_json() or {}
+        data = RegisterSchema().load(body)
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 400
 
-    if not username or not email or not password:
-        return jsonify({"message": "Missing required fields"}), 400
-
-    # 簡易メールバリデーション
-    email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
-    if not re.match(email_regex, email):
-        return jsonify({"message": "Invalid email format"}), 400
-
-    if len(password) < 8:
-        return jsonify({"message": "Password must be at least 8 characters"}), 400
+    username = data["username"]
+    email = data["email"]
+    password = data["password"]
 
     # 重複チェック
     if user_service.user_exists_by_username(username):
@@ -85,26 +79,27 @@ def get_profile():
 @login_required
 def patch_profile():
     """ユーザー情報の部分更新"""
-    data = request.get_json()
-    if not data:
-        return jsonify({"message": "No data provided"}), 400
+    try:
+        body = request.get_json() or {}
+        data = UpdateUserSchema().load(body, partial=True)
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 400
 
-    # 入力検証と重複チェック
-    if "email" in data and data.get("email"):
-        email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
-        if not re.match(email_regex, data.get("email")):
-            return jsonify({"message": "Invalid email format"}), 400
-        if (
-            user_service.user_exists_by_email(data.get("email"))
-            and data.get("email") != current_user.email
-        ):
+    # 重複チェック
+    if (
+        "email" in data
+        and data.get("email")
+        and data.get("email") != current_user.email
+    ):
+        if user_service.user_exists_by_email(data.get("email")):
             return jsonify({"message": "Email already in use"}), 409
 
-    if "username" in data and data.get("username"):
-        if (
-            user_service.user_exists_by_username(data.get("username"))
-            and data.get("username") != current_user.username
-        ):
+    if (
+        "username" in data
+        and data.get("username")
+        and data.get("username") != current_user.username
+    ):
+        if user_service.user_exists_by_username(data.get("username")):
             return jsonify({"message": "Username already in use"}), 409
 
     updated_user = user_service.update_user_profile(current_user.id, data)

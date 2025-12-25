@@ -5,6 +5,7 @@ from flask_migrate import Migrate
 from sqlalchemy import text
 
 from config import Config
+from extensions import ma
 from models import User, db
 
 # Flaskアプリケーションのインスタンス作成
@@ -16,6 +17,7 @@ db.init_app(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
+ma.init_app(app)
 
 from routers import posts_bp, settings_bp, users_bp  # noqa: E402
 
