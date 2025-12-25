@@ -4,6 +4,12 @@ class DomainError(Exception):
     pass
 
 
+class UnauthorizedError(Exception):
+    """認証に失敗した場合（401）の例外"""
+
+    pass
+
+
 class NotFoundError(DomainError):
     """Requested resource was not found."""
 

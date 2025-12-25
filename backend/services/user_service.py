@@ -1,22 +1,40 @@
 from flask import current_app
+from marshmallow import ValidationError
 
+from exceptions import ForbiddenError, NotFoundError, UnauthorizedError
 from extensions import db
 from models import User
 from services.setting_service import create_default_settings
 
 
-def register_user(user_obj):
-    """ユーザーを登録（Schemaで作成された User インスタンスを受け取る）"""
+def register_user(validated_data: dict):
+    """Create a new user from validated data (dict).
+
+    Raises ValidationError for uniqueness violations. On DB errors, logs and re-raises.
+    """
+    username = validated_data.get("username")
+    email = validated_data.get("email")
+    password = validated_data.get("password")
+
+    # uniqueness checks
+    if User.query.filter_by(username=username).first():
+        raise ValidationError({"username": ["Username already taken"]})
+    if User.query.filter_by(email=email).first():
+        raise ValidationError({"email": ["Email already registered"]})
+
     try:
-        db.session.add(user_obj)
+        user = User(username=username, email=email)
+        if password:
+            user.set_password(password)
+        db.session.add(user)
         db.session.flush()
-        create_default_settings(user_obj.id)
+        create_default_settings(user.id)
         db.session.commit()
-        return user_obj
+        return user
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Registration error: {e}")
-        return None
+        raise
 
 
 def user_exists_by_username(username):
@@ -27,14 +45,18 @@ def user_exists_by_email(email):
     return User.query.filter_by(email=email).first() is not None
 
 
-def login_user(user_obj):
-    """ログイン処理（LoginSchema が作った軽量オブジェクトを受け取る）"""
-    username = getattr(user_obj, "username", None)
-    password = getattr(user_obj, "password", None)
+def login_user(credentials: dict):
+    """ログイン処理：失敗時は UnauthorizedError を投げる"""
+    username = credentials.get("username")
+    password = credentials.get("password")
+
     user = User.query.filter_by(username=username).first()
-    if user and password and user.check_password(password):
-        return user
-    return None
+
+    # ユーザーが存在しない、またはパスワードが違う場合は例外を投げる
+    if not user or not user.check_password(password):
+        raise UnauthorizedError("Invalid username or password")
+
+    return user
 
 
 def get_all_users():
@@ -47,45 +69,61 @@ def get_user_by_id(user_id):
     return User.query.get(user_id)
 
 
-def update_user_profile(user_obj):
-    """更新済みの User インスタンスを受け取り、DB に永続化する"""
+def update_user_profile(user_id: int, validated_data: dict, current_user_id: int):
+    """Update user identified by user_id using validated_data.
+
+    Raises NotFoundError or ForbiddenError. Raises ValidationError for uniqueness.
+    """
+    # authorization: only the owner can update their profile
+    if user_id != current_user_id:
+        raise ForbiddenError("Not allowed to update this user")
+
+    user = User.query.get(user_id)
+    if not user:
+        raise NotFoundError("User not found")
+
+    # uniqueness checks
+    new_username = validated_data.get("username")
+    new_email = validated_data.get("email")
+    if new_username:
+        existing = User.query.filter_by(username=new_username).first()
+        if existing and existing.id != user_id:
+            raise ValidationError({"username": ["Username already taken"]})
+    if new_email:
+        existing = User.query.filter_by(email=new_email).first()
+        if existing and existing.id != user_id:
+            raise ValidationError({"email": ["Email already registered"]})
+
     try:
-        # if detached instance with id, merge changes
-        if not getattr(user_obj, "id", None):
-            return None
-
-        existing = User.query.get(user_obj.id)
-        if not existing:
-            return None
-
-        # copy fields
         for attr in ("username", "email"):
-            val = getattr(user_obj, attr, None)
-            if val is not None:
-                setattr(existing, attr, val)
+            if attr in validated_data:
+                setattr(user, attr, validated_data[attr])
 
-        # password handled by schema (set_password on existing if provided)
-        if getattr(user_obj, "password_hash", None) and not existing.password_hash:
-            existing.password_hash = user_obj.password_hash
+        if "password" in validated_data and validated_data["password"]:
+            user.set_password(validated_data["password"])
 
         db.session.commit()
-        return existing
+        return user
     except Exception as e:
         current_app.logger.error(f"update_user_profile error: {e}")
         db.session.rollback()
-        return None
+        raise
 
 
-def delete_user(user_id):
-    """ユーザーを削除"""
+def delete_user(user_id: int, current_user_id: int):
+    """Delete user by id. Raises NotFoundError or ForbiddenError."""
+    user = User.query.get(user_id)
+    if not user:
+        raise NotFoundError("User not found")
+
+    if user_id != current_user_id:
+        raise ForbiddenError("Not allowed to delete this user")
+
     try:
-        user = User.query.get(user_id)
-        if user:
-            db.session.delete(user)
-            db.session.commit()
-            return True
-        return False
+        db.session.delete(user)
+        db.session.commit()
+        return True
     except Exception as e:
         current_app.logger.error(f"delete_user error: {e}")
         db.session.rollback()
-        return False
+        raise

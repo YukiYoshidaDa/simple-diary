@@ -60,7 +60,7 @@ def create_app(config_object: object = Config):
 def register_error_handlers(app: Flask):
     """Register domain error handlers on the Flask app."""
     # import exceptions locally to avoid circular imports at module import time
-    from exceptions import DomainError, ForbiddenError, NotFoundError
+    from exceptions import DomainError, ForbiddenError, NotFoundError, UnauthorizedError
 
     @app.errorhandler(NotFoundError)
     def handle_not_found(err):
@@ -74,6 +74,10 @@ def register_error_handlers(app: Flask):
     def handle_domain_error(err):
         # Generic handler for other domain errors; default to 400
         return jsonify({"error": str(err)}), 400
+
+    @app.errorhandler(UnauthorizedError)
+    def handle_unauthorized_error(e):
+        return jsonify({"error": "Unauthorized", "message": str(e)}), 401
 
 
 app = create_app()

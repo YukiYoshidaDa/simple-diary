@@ -24,7 +24,6 @@ def get_all_posts():
 
 @posts_bp.route("/<int:post_id>", methods=["GET"])
 def get_post(post_id):
-    # 存在しなければ自動で NotFoundError -> 404
     post = post_service.get_post_by_id(post_id)
     return jsonify(PostSchema().dump(post)), 200
 
@@ -34,7 +33,6 @@ def get_post(post_id):
 def update_post(post_id):
     body = request.get_json() or {}
     validated = PostSchema(partial=True).load(body)
-    # 権限エラーもNotFoundもServiceが投げてくれる
     updated = post_service.update_post(post_id, validated, current_user.id)
     return jsonify(PostSchema().dump(updated)), 200
 
@@ -42,6 +40,5 @@ def update_post(post_id):
 @posts_bp.route("/<int:post_id>", methods=["DELETE"])
 @login_required
 def delete_post(post_id):
-    # パラメータに current_user.id を渡すのがポイント
     post_service.delete_post(post_id, current_user.id)
     return jsonify({"message": "Post deleted successfully"}), 200
