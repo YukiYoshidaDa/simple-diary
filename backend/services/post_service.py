@@ -4,12 +4,21 @@ from extensions import db
 from models import Post
 
 
-def create_post(post_obj):
-    """Schema が作った Post インスタンスを受け取り保存する"""
+class NotFoundError(Exception):
+    pass
+
+
+class ForbiddenError(Exception):
+    pass
+
+
+def create_post(validated_data: dict, current_user_id: int):
+    """Create a Post from validated data and associate current user as owner."""
     try:
-        db.session.add(post_obj)
+        post = Post(content=validated_data.get("content"), user_id=current_user_id)
+        db.session.add(post)
         db.session.commit()
-        return post_obj
+        return post
     except Exception as e:
         current_app.logger.error(f"create_post error: {e}")
         db.session.rollback()
@@ -42,14 +51,22 @@ def get_posts_by_user(user_id):
     return Post.query.filter_by(user_id=user_id).all()
 
 
-def update_post(post_obj):
+def update_post(post_id: int, validated_data: dict, current_user_id: int):
     try:
-        post = Post.query.get(post_obj.id)
-        if post:
-            post.content = post_obj.content
-            db.session.commit()
-            return post
-        return None
+        post = Post.query.get(post_id)
+        if not post:
+            raise NotFoundError("Post not found")
+
+        if post.user_id != current_user_id:
+            raise ForbiddenError("Forbidden")
+
+        if "content" in validated_data:
+            post.content = validated_data["content"]
+
+        db.session.commit()
+        return post
+    except (NotFoundError, ForbiddenError):
+        raise
     except Exception as e:
         current_app.logger.error(f"update_post error: {e}")
         db.session.rollback()
