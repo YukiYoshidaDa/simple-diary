@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 from marshmallow import ValidationError
 
-from schemas.setting_schema import SettingUpdateSchema
+from schemas.setting_schema import SettingSchema, SettingUpdateSchema
 from services import setting_service
 
 settings_bp = Blueprint("settings", __name__)
@@ -15,7 +15,7 @@ def get_settings():
     if not settings:
         return jsonify({"error": "Settings not found"}), 404
 
-    return jsonify(settings.to_dict()), 200
+    return jsonify(SettingSchema().dump(settings)), 200
 
 
 @settings_bp.route("", methods=["PATCH"])
@@ -33,5 +33,8 @@ def update_settings_route():
         return jsonify({"error": "Failed to update"}), 400
 
     return jsonify(
-        {"message": "Settings updated", "settings": updated_settings.to_dict()}
+        {
+            "message": "Settings updated",
+            "settings": SettingSchema().dump(updated_settings),
+        }
     ), 200
