@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
+from exceptions import ForbiddenError, NotFoundError
 from schemas.post_schema import PostSchema
 from services import post_service
 
@@ -41,9 +42,9 @@ def update_post(post_id):
 
     try:
         updated = post_service.update_post(post_id, validated, current_user.id)
-    except post_service.NotFoundError:
+    except NotFoundError:
         return jsonify({"error": "Post not found"}), 404
-    except post_service.ForbiddenError:
+    except ForbiddenError:
         return jsonify({"error": "Forbidden"}), 403
 
     if not updated:

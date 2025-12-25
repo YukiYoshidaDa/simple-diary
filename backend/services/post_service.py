@@ -1,15 +1,8 @@
 from flask import current_app
 
+from exceptions import ForbiddenError, NotFoundError
 from extensions import db
 from models import Post
-
-
-class NotFoundError(Exception):
-    pass
-
-
-class ForbiddenError(Exception):
-    pass
 
 
 def create_post(validated_data: dict, current_user_id: int):

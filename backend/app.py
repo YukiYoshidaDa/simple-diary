@@ -26,6 +26,9 @@ def create_app(config_object: object = Config):
     api_bp.register_blueprint(posts_bp, url_prefix="/posts")
     app.register_blueprint(api_bp, url_prefix="/api")
 
+    # ドメインエラーのハンドラ登録
+    register_error_handlers(app)
+
     @login_manager.user_loader
     def load_user(user_id):
         # ロード時にモデルをインポートして循環を避ける
@@ -52,6 +55,25 @@ def create_app(config_object: object = Config):
         return jsonify({"errors": err.messages}), 400
 
     return app
+
+
+def register_error_handlers(app: Flask):
+    """Register domain error handlers on the Flask app."""
+    # import exceptions locally to avoid circular imports at module import time
+    from exceptions import DomainError, ForbiddenError, NotFoundError
+
+    @app.errorhandler(NotFoundError)
+    def handle_not_found(err):
+        return jsonify({"error": str(err)}), 404
+
+    @app.errorhandler(ForbiddenError)
+    def handle_forbidden(err):
+        return jsonify({"error": str(err)}), 403
+
+    @app.errorhandler(DomainError)
+    def handle_domain_error(err):
+        # Generic handler for other domain errors; default to 400
+        return jsonify({"error": str(err)}), 400
 
 
 app = create_app()
