@@ -9,7 +9,7 @@ from flask_login import (
 )
 
 from schemas.post_schema import PostSchema
-from schemas.user_schema import LoginSchema, UpdateUserSchema, UserSchema
+from schemas.user_schema import LoginSchema, UserSchema
 from services import post_service, user_service
 
 users_bp = Blueprint("users", __name__)
@@ -19,35 +19,20 @@ users_bp = Blueprint("users", __name__)
 @users_bp.route("/register", methods=["POST"])
 def register():
     body = request.get_json() or {}
-    data = UserSchema().load(body)
+    validated = UserSchema().load(body)
 
-    username = data["username"]
-    email = data["email"]
-    password = data["password"]
-
-    # 重複チェック
-    if user_service.user_exists_by_username(username):
-        return jsonify({"message": "Username already taken"}), 409
-    if user_service.user_exists_by_email(email):
-        return jsonify({"message": "Email already registered"}), 409
-
-    user = user_service.register_user(username, email, password)
-    if not user:
-        return jsonify({"message": "Failed to register user"}), 500
-
+    user = user_service.register_user(validated)
     return jsonify({"message": "User registered successfully", "id": user.id}), 201
 
 
 @users_bp.route("/login", methods=["POST"])
 def login():
     body = request.get_json() or {}
-    data = LoginSchema().load(body)
+    login_obj = LoginSchema().load(body)
 
-    user = user_service.login_user(data["username"], data["password"])
-    if user:
-        flask_login_user(user)
-        return jsonify({"message": "Login successful", "id": user.id}), 200
-    return jsonify({"message": "Invalid credentials"}), 401
+    user = user_service.login_user(login_obj)
+    flask_login_user(user)
+    return jsonify({"message": "Login successful", "id": user.id}), 200
 
 
 @users_bp.route("/all", methods=["GET"])
@@ -73,39 +58,23 @@ def get_profile():
 def patch_profile():
     """ユーザー情報の部分更新"""
     body = request.get_json() or {}
-    data = UpdateUserSchema().load(body, partial=True)
 
-    # 重複チェック
-    if (
-        "email" in data
-        and data.get("email")
-        and data.get("email") != current_user.email
-    ):
-        if user_service.user_exists_by_email(data.get("email")):
-            return jsonify({"message": "Email already in use"}), 409
+    validated = UserSchema(partial=True).load(body)
 
-    if (
-        "username" in data
-        and data.get("username")
-        and data.get("username") != current_user.username
-    ):
-        if user_service.user_exists_by_username(data.get("username")):
-            return jsonify({"message": "Username already in use"}), 409
+    updated_user = user_service.update_user_profile(
+        current_user.id, validated, current_user.id
+    )
 
-    updated_user = user_service.update_user_profile(current_user.id, data)
-
-    if updated_user:
-        return jsonify(
-            {"message": "Profile updated", "user": UserSchema().dump(updated_user)}
-        ), 200
-    else:
-        return jsonify({"message": "Failed to update profile"}), 400
+    return jsonify(
+        {"message": "Profile updated", "user": UserSchema().dump(updated_user)}
+    ), 200
 
 
 @users_bp.route("/profile", methods=["DELETE"])
 @login_required
 def delete_profile():
-    user_service.delete_user(current_user.id)
+    user_service.delete_user(current_user.id, current_user.id)
+    logout_user()
     return jsonify({"message": "Profile deleted successfully"}), 200
 
 
