@@ -18,7 +18,7 @@ def create_post(validated_data: dict, current_user_id: int):
 
 
 def get_post_by_id(post_id):
-    post = Post.query.get(post_id)
+    post = db.session.get(Post, post_id)
     if not post:
         raise NotFoundError(f"Post with id {post_id} not found")
     return post

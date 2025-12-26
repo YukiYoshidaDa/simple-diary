@@ -6,7 +6,7 @@ class Config:
     ENV = os.getenv("FLASK_ENV", "development")
 
     # 2. 秘密鍵の設定
-    if ENV == "development":
+    if ENV in ("development", "testing"):
         SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
     else:
         SECRET_KEY = os.environ.get("SECRET_KEY")
@@ -14,16 +14,19 @@ class Config:
             raise ValueError("No SECRET_KEY set for production environment")
 
     # 3. データベース接続文字列
-    MYSQL_USER = os.getenv("MYSQL_USER")
-    MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
-    MYSQL_HOST = os.getenv("MYSQL_HOST", "mysql_sns")  # デフォルトはサービス名
-    MYSQL_PORT = os.getenv("MYSQL_PORT", "3306")
-    MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
+    if ENV == "testing":
+        SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    else:
+        MYSQL_USER = os.getenv("MYSQL_USER")
+        MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
+        MYSQL_HOST = os.getenv("MYSQL_HOST", "mysql_sns")  # デフォルトはサービス名
+        MYSQL_PORT = os.getenv("MYSQL_PORT", "3306")
+        MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
 
-    SQLALCHEMY_DATABASE_URI = (
-        f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@"
-        f"{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4"
-    )
+        SQLALCHEMY_DATABASE_URI = (
+            f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@"
+            f"{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}?charset=utf8mb4"
+        )
 
     # SQLAlchemy の追加設定（警告抑制など）
     SQLALCHEMY_TRACK_MODIFICATIONS = False
