@@ -43,3 +43,29 @@ def db(app):
 def client(app):
     """APIのリクエストをシミュレーションするためのHTTPクライアントを提供します。"""
     return app.test_client()
+
+
+@pytest.fixture
+def registered_user(db):
+    """テスト用に登録済みのユーザーを作成します。"""
+    from services import user_service
+
+    user_data = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "password123",
+    }
+    return user_service.register_user(user_data)
+
+
+@pytest.fixture
+def auth_client(client, registered_user):
+    """ログイン済みのクライアントを提供します。"""
+    import json
+
+    client.post(
+        "/api/users/login",
+        data=json.dumps({"username": "testuser", "password": "password123"}),
+        content_type="application/json",
+    )
+    return client

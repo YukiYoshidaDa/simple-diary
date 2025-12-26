@@ -78,3 +78,28 @@ def test_full_login_profile_flow(client, db):
     data = response.get_json()
     assert data["username"] == "flowuser"
     assert data["email"] == "flow@example.com"
+
+
+def test_update_profile_api(auth_client):
+    """API経由でのプロフィール更新を確認"""
+    response = auth_client.patch(
+        "/api/users/profile",
+        data=json.dumps({"username": "newname"}),
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    assert response.get_json()["user"]["username"] == "newname"
+
+
+def test_delete_account_api(auth_client):
+    """API経由でのアカウント削除を確認"""
+    response = auth_client.delete("/api/users/profile")
+    assert response.status_code == 200
+
+    # 削除後はログインできないことを確認
+    login_response = auth_client.post(
+        "/api/users/login",
+        data=json.dumps({"username": "testuser", "password": "password123"}),
+        content_type="application/json",
+    )
+    assert login_response.status_code == 401
