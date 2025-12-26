@@ -66,7 +66,7 @@ def get_all_users():
 
 def get_user_by_id(user_id):
     """IDでユーザーを取得"""
-    return User.query.get(user_id)
+    return db.session.get(User, user_id)
 
 
 def update_user_profile(user_id: int, validated_data: dict, current_user_id: int):
@@ -78,7 +78,7 @@ def update_user_profile(user_id: int, validated_data: dict, current_user_id: int
     if user_id != current_user_id:
         raise ForbiddenError("Not allowed to update this user")
 
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         raise NotFoundError("User not found")
 
@@ -112,7 +112,7 @@ def update_user_profile(user_id: int, validated_data: dict, current_user_id: int
 
 def delete_user(user_id: int, current_user_id: int):
     """Delete user by id. Raises NotFoundError or ForbiddenError."""
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         raise NotFoundError("User not found")
 
