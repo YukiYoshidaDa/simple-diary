@@ -10,7 +10,7 @@ function Header({ user, onLogout }: { user: any, onLogout: () => void }) {
   return (
     <header>
       <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--accent)' }}>
-        Simple Diary
+        Fragments
       </div>
       <nav className="nav-links">
         {user ? (

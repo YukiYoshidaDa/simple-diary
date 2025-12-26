@@ -1,4 +1,4 @@
-# Simple Diary
+# Fragments
 
 Flask (Backend) と React + Vite (Frontend) を組み合わせたフルスタック SNS アプリケーションです。
 
@@ -12,7 +12,7 @@ Flask (Backend) と React + Vite (Frontend) を組み合わせたフルスタッ
 ## 2. ディレクトリ構成
 
 ```text
-simple-diary/
+fragments/
 ├── backend/
 │   ├── app.py              # Flask アプリケーションのファクトリー
 │   ├── config.py           # 環境ごとの設定管理（dev/testing/prod）

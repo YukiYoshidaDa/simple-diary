@@ -26,7 +26,7 @@ def seed():
     click.echo(f"Created users: {user1.username}, {user2.username}")
 
     # Create Posts
-    post_service.create_post({"content": "Hello, Simple Diary!"}, user1.id)
+    post_service.create_post({"content": "Hello, Fragments!"}, user1.id)
     post_service.create_post({"content": "This is my first post."}, user1.id)
     post_service.create_post({"content": "Another day, another bug fixed."}, user1.id)
 
