@@ -34,7 +34,7 @@ def create_app(config_object: object = Config):
         # ロード時にモデルをインポートして循環を避ける
         from models import User
 
-        return User.query.get(int(user_id))
+        return db.session.get(User, int(user_id))
 
     @login_manager.unauthorized_handler
     def unauthorized():
