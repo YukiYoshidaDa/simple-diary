@@ -1,7 +1,8 @@
 import pytest
+
 from app import create_app
-from extensions import db as _db
 from config import Config
+from extensions import db as _db
 
 
 class TestConfig(Config):

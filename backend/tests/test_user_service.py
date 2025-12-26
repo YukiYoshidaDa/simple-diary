@@ -1,7 +1,8 @@
 import pytest
 from marshmallow import ValidationError
-from services import user_service
+
 from models import User
+from services import user_service
 
 
 def test_register_user_success(db):
