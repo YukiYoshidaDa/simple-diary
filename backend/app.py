@@ -54,6 +54,11 @@ def create_app(config_object: object = Config):
     def handle_validation_error(err):
         return jsonify({"errors": err.messages}), 400
 
+    # CLI コマンドの登録
+    from commands import seed
+
+    app.cli.add_command(seed)
+
     return app
 
 

@@ -2,7 +2,6 @@ import json
 
 from services import post_service, user_service
 
-
 # Local auth_client removed, using conftest.py's auth_client instead
 
 

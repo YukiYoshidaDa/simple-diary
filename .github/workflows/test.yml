@@ -1,0 +1,24 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: ["main", "master"]
+    paths:
+      - "backend/**"
+  pull_request:
+    branches: ["main", "master"]
+    paths:
+      - "backend/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Test Image
+        run: docker build -t diary-backend-test -f backend/Dockerfile.test backend
+
+      - name: Run Tests
+        run: docker run --rm diary-backend-test

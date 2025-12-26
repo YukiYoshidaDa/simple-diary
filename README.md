@@ -53,7 +53,16 @@ docker compose up --build
 
 - **Backend (API)**: `http://localhost:5001/api`
 - **Frontend**: `http://localhost:5173`
+- **Frontend**: `http://localhost:5173`
 - **MySQL (DB)**: `localhost:3306`
+
+### 初期データの投入 (Seed)
+
+開発用のダミーデータ（ユーザー、投稿）を作成するには以下のコマンドを実行してください。
+
+```bash
+docker compose exec flask flask seed
+```
 
 ## 5. テスト環境の実行方法
 
